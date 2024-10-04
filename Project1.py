@@ -11,7 +11,36 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import make_scorer, accuracy_score, f1_score, precision_score
+from sklearn.base import BaseEstimator, ClassifierMixin
 from scipy.stats import randint
+
+
+class StackingClassifier(BaseEstimator, ClassifierMixin):
+    def __init__(self, base_models, meta_model):
+        self.base_models = base_models
+        self.meta_model = meta_model
+    
+    def fit(self, X, y):
+        # Train base models
+        for model in self.base_models:
+            model.fit(X, y)
+        
+        # Create meta-features
+        meta_features = self._get_meta_features(X)
+        
+        # Train meta-model
+        self.meta_model.fit(meta_features, y)
+        
+        return self
+    
+    def predict(self, X):
+        meta_features = self._get_meta_features(X)
+        return self.meta_model.predict(meta_features)
+    
+    def _get_meta_features(self, X):
+        return np.column_stack([
+            model.predict_proba(X) for model in self.base_models
+        ])
 
 """Data Processing"""
 df = pd.read_csv('Project_1_Data.csv')
@@ -57,24 +86,24 @@ X = df.drop('Step', axis=1)
 y = df['Step']
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# """Logistic Cross Validation"""
-# model = LogisticRegression()
+"""Logistic Cross Validation"""
+model = LogisticRegression()
 
-# # Number of folds
-# n_folds = 5
+# Number of folds
+n_folds = 5
 
-# # Perform cross-validation
-# accuracy_scores = cross_val_score(model, X, y, cv=n_folds, scoring='accuracy')
-# f1_scores = cross_val_score(model, X, y, cv=n_folds, scoring='f1_weighted')
-# precision_scores = cross_val_score(model, X, y, cv=n_folds, scoring='precision_weighted')
+# Perform cross-validation
+accuracy_scores = cross_val_score(model, X, y, cv=n_folds, scoring='accuracy')
+f1_scores = cross_val_score(model, X, y, cv=n_folds, scoring='f1_weighted')
+precision_scores = cross_val_score(model, X, y, cv=n_folds, scoring='precision_weighted')
 
-# # Print results
-# print(f"Accuracy scores: {accuracy_scores}")
-# print(f"Mean accuracy: {accuracy_scores.mean():.4f} (+/- {accuracy_scores.std() * 2:.4f})")
-# print(f"F1 scores: {f1_scores}")
-# print(f"Mean F1: {f1_scores.mean():.4f} (+/- {f1_scores.std() * 2:.4f})")
-# print(f"Precision scores: {precision_scores}")
-# print(f"Mean precision: {precision_scores.mean():.4f} (+/- {precision_scores.std() * 2:.4f})")
+# Print results
+print(f"Accuracy scores: {accuracy_scores}")
+print(f"Mean accuracy: {accuracy_scores.mean():.4f} (+/- {accuracy_scores.std() * 2:.4f})")
+print(f"F1 scores: {f1_scores}")
+print(f"Mean F1: {f1_scores.mean():.4f} (+/- {f1_scores.std() * 2:.4f})")
+print(f"Precision scores: {precision_scores}")
+print(f"Mean precision: {precision_scores.mean():.4f} (+/- {precision_scores.std() * 2:.4f})")
 
 """Random Search CV"""
 # Define the parameter distribution
@@ -140,7 +169,38 @@ plt.show()
 print("Confusion Matrix:")
 print(cm)
 
-
 """Model Stacking"""
+# Create base models
+rf_model = best_rf_model_random  # Use the best Random Forest model from RandomizedSearchCV
+lr_model = LogisticRegression(random_state=42)
+
+# Create meta-model
+meta_model = LogisticRegression(random_state=42)
+
+# Create and train stacking classifier
+stacking_clf = StackingClassifier(base_models=[rf_model, lr_model], meta_model=meta_model)
+stacking_clf.fit(X_train, y_train)
+
+# Make predictions
+y_pred_stacking = stacking_clf.predict(X_test)
+
+# Evaluate the stacked model
+print("\nStacking Classifier Results:")
+print("Accuracy score: {:.2f}".format(accuracy_score(y_test, y_pred_stacking)))
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred_stacking))
+
+# Generate and plot confusion matrix for stacked model
+cm_stacking = confusion_matrix(y_test, y_pred_stacking)
+
+plt.figure(figsize=(10, 8))
+sns.heatmap(cm_stacking, annot=True, fmt='d', cmap='Blues')
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.title('Confusion Matrix for Stacking Classifier')
+plt.show()
+
+print("Confusion Matrix for Stacking Classifier:")
+print(cm_stacking)
 
 """Joblib"""
