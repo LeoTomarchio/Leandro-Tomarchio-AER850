@@ -2,10 +2,16 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import RandomizedSearchCV
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import make_scorer, accuracy_score, f1_score, precision_score
+from scipy.stats import randint
 
 """Data Processing"""
 df = pd.read_csv('Project_1_Data.csv')
@@ -51,39 +57,24 @@ X = df.drop('Step', axis=1)
 y = df['Step']
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-"""Grid Search"""
-# Define the parameter grid
-param_grid = {
-    'n_estimators': [100, 200, 300],
-    'max_depth': [None, 10, 20, 30],
-    'min_samples_split': [2, 5, 10],
-    'min_samples_leaf': [1, 2, 4]
-}
+# """Logistic Cross Validation"""
+# model = LogisticRegression()
 
-# Initialize the Random Forest classifier
-rf_classifier = RandomForestClassifier(random_state=42)
+# # Number of folds
+# n_folds = 5
 
-# Set up GridSearchCV
-grid_search = GridSearchCV(estimator=rf_classifier, param_grid=param_grid, cv=5, n_jobs=-1, verbose=2)
+# # Perform cross-validation
+# accuracy_scores = cross_val_score(model, X, y, cv=n_folds, scoring='accuracy')
+# f1_scores = cross_val_score(model, X, y, cv=n_folds, scoring='f1_weighted')
+# precision_scores = cross_val_score(model, X, y, cv=n_folds, scoring='precision_weighted')
 
-# Fit the grid search to the data
-grid_search.fit(X_train, y_train)
-
-# Print the best parameters and score
-print("Best parameters found: ", grid_search.best_params_)
-print("Best cross-validation score: {:.2f}".format(grid_search.best_score_))
-
-# Get the best model
-best_rf_model = grid_search.best_estimator_
-
-# Make predictions on the test set
-y_pred = best_rf_model.predict(X_test)
-
-# Print the accuracy score and classification report
-print("Accuracy score: {:.2f}".format(accuracy_score(y_test, y_pred)))
-print("\nClassification Report:")
-print(classification_report(y_test, y_pred))
-
+# # Print results
+# print(f"Accuracy scores: {accuracy_scores}")
+# print(f"Mean accuracy: {accuracy_scores.mean():.4f} (+/- {accuracy_scores.std() * 2:.4f})")
+# print(f"F1 scores: {f1_scores}")
+# print(f"Mean F1: {f1_scores.mean():.4f} (+/- {f1_scores.std() * 2:.4f})")
+# print(f"Precision scores: {precision_scores}")
+# print(f"Mean precision: {precision_scores.mean():.4f} (+/- {precision_scores.std() * 2:.4f})")
 
 """Random Search CV"""
 # Define the parameter distribution
@@ -127,8 +118,28 @@ print("Accuracy score: {:.2f}".format(accuracy_score(y_test, y_pred_random)))
 print("\nClassification Report:")
 print(classification_report(y_test, y_pred_random))
 
-
 """Confusion Matrix"""
+# Generate the confusion matrix
+cm = confusion_matrix(y_test, y_pred_random)
+
+# Create a figure and axis
+plt.figure(figsize=(10, 8))
+
+# Plot the confusion matrix using seaborn
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+
+# Set labels and title
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.title('Confusion Matrix for Random Forest Classifier')
+
+# Show the plot
+plt.show()
+
+# Print the confusion matrix
+print("Confusion Matrix:")
+print(cm)
+
 
 """Model Stacking"""
 
