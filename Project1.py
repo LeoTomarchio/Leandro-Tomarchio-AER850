@@ -7,6 +7,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import RandomizedSearchCV
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
@@ -88,6 +90,59 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 
 """Logistic Cross Validation"""
 model = LogisticRegression()
+
+# Number of folds
+n_folds = 5
+
+# Perform cross-validation
+accuracy_scores = cross_val_score(model, X, y, cv=n_folds, scoring='accuracy')
+f1_scores = cross_val_score(model, X, y, cv=n_folds, scoring='f1_weighted')
+precision_scores = cross_val_score(model, X, y, cv=n_folds, scoring='precision_weighted')
+
+# Print results
+print(f"Accuracy scores: {accuracy_scores}")
+print(f"Mean accuracy: {accuracy_scores.mean():.4f} (+/- {accuracy_scores.std() * 2:.4f})")
+print(f"F1 scores: {f1_scores}")
+print(f"Mean F1: {f1_scores.mean():.4f} (+/- {f1_scores.std() * 2:.4f})")
+print(f"Precision scores: {precision_scores}")
+print(f"Mean precision: {precision_scores.mean():.4f} (+/- {precision_scores.std() * 2:.4f})")
+
+"""Decision Tree Cross Validation"""
+# Create the decision tree model with parameters
+model = DecisionTreeClassifier(
+    max_depth=5,
+    min_samples_split=2,
+    min_samples_leaf=1,
+    max_features='sqrt',
+    criterion='gini',
+    random_state=42
+)
+
+# Number of folds
+n_folds = 5
+
+# Perform cross-validation
+accuracy_scores = cross_val_score(model, X, y, cv=n_folds, scoring='accuracy')
+f1_scores = cross_val_score(model, X, y, cv=n_folds, scoring='f1_weighted')
+precision_scores = cross_val_score(model, X, y, cv=n_folds, scoring='precision_weighted')
+
+# Print results
+print(f"Accuracy scores: {accuracy_scores}")
+print(f"Mean accuracy: {accuracy_scores.mean():.4f} (+/- {accuracy_scores.std() * 2:.4f})")
+print(f"F1 scores: {f1_scores}")
+print(f"Mean F1: {f1_scores.mean():.4f} (+/- {f1_scores.std() * 2:.4f})")
+print(f"Precision scores: {precision_scores}")
+print(f"Mean precision: {precision_scores.mean():.4f} (+/- {precision_scores.std() * 2:.4f})")
+
+"""Support Vector Machine"""
+# Create the SVM model with parameters
+model = SVC(
+    C=1.0,
+    kernel='rbf',
+    gamma='scale',
+    class_weight='balanced',
+    random_state=42
+)
 
 # Number of folds
 n_folds = 5
@@ -204,3 +259,15 @@ print("Confusion Matrix for Stacking Classifier:")
 print(cm_stacking)
 
 """Joblib"""
+# Import joblib if not already imported
+from joblib import dump
+
+# Save the stacking classifier model
+dump(stacking_clf, 'stacking_classifier_model.joblib')
+
+print("Stacking Classifier model saved as 'stacking_classifier_model.joblib'")
+
+# Optionally, save the best Random Forest model as well
+dump(best_rf_model_random, 'best_random_forest_model.joblib')
+
+print("Best Random Forest model saved as 'best_random_forest_model.joblib'")
